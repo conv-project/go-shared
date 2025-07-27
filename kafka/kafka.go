@@ -3,7 +3,6 @@ package kafka
 import (
 	"context"
 	"fmt"
-	"strings"
 	"sync"
 
 	"github.com/IBM/sarama"
@@ -85,9 +84,7 @@ type Consumer struct {
 }
 
 // NewConsumer creates a new Kafka consumer.
-func NewConsumer(brokerList string, groupID string, topics []string, handler sarama.ConsumerGroupHandler) (*Consumer, error) {
-	brokers := strings.Split(brokerList, ",")
-
+func NewConsumer(brokers []string, groupID string, topics []string, handler sarama.ConsumerGroupHandler) (*Consumer, error) {
 	config := sarama.NewConfig()
 	config.Consumer.Return.Errors = true
 	config.Consumer.Offsets.Initial = sarama.OffsetNewest

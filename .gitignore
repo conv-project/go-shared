@@ -1,0 +1,36 @@
+# Binaries
+/bin/
+/build/
+/dist/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Vendor
+/vendor/
+
+# Go modules
+/go.sum
+
+# IDE
+.idea/
+.vscode/
+.cursor
+*.swp
+*.swo
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Configs
+.env
+.env.*
+/configs/*.local.yaml 

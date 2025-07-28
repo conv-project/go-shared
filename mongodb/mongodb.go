@@ -8,18 +8,17 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/zap"
-
-	"github.com/conv-project/conversion-service/pkg/logger"
 )
 
 // Database represents MongoDB database connection.
 type Database struct {
 	client   *mongo.Client
 	database *mongo.Database
+	logger   *zap.Logger
 }
 
 // New creates a new MongoDB connection.
-func New(dsn string, dbName string) (*Database, error) {
+func New(logger *zap.Logger, dsn string, dbName string) (*Database, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -41,6 +40,7 @@ func New(dsn string, dbName string) (*Database, error) {
 	logger.Info("Connected to MongoDB", zap.String("dsn", dsn), zap.String("database", dbName))
 
 	return &Database{
+		logger:   logger,
 		client:   client,
 		database: client.Database(dbName),
 	}, nil
@@ -52,7 +52,7 @@ func (db *Database) Close(ctx context.Context) error {
 		if err := db.client.Disconnect(ctx); err != nil {
 			return fmt.Errorf("failed to disconnect from MongoDB: %w", err)
 		}
-		logger.Info("Disconnected from MongoDB")
+		db.logger.Info("Disconnected from MongoDB")
 	}
 	return nil
 }

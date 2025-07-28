@@ -3,22 +3,22 @@ package kafka
 import (
 	"context"
 	"fmt"
+	"log"
 	"sync"
 
 	"github.com/IBM/sarama"
 	"go.uber.org/zap"
-
-	"github.com/conv-project/conversion-service/pkg/logger"
 )
 
 // Producer represents Kafka producer.
 type Producer struct {
 	producer sarama.SyncProducer
 	brokers  []string
+	logger   *zap.Logger
 }
 
 // NewProducer creates a new Kafka producer.
-func NewProducer(brokers []string) (*Producer, error) {
+func NewProducer(logger *zap.Logger, brokers []string) (*Producer, error) {
 	config := sarama.NewConfig()
 	config.Producer.RequiredAcks = sarama.WaitForAll
 	config.Producer.Retry.Max = 5
@@ -29,9 +29,9 @@ func NewProducer(brokers []string) (*Producer, error) {
 		return nil, fmt.Errorf("failed to create Kafka producer: %w", err)
 	}
 
-	logger.Info("Connected to Kafka producer", zap.Strings("brokers", brokers))
-
+	log.Printf("Connected to Kafka producer: %v", brokers)
 	return &Producer{
+		logger:   logger,
 		producer: producer,
 		brokers:  brokers,
 	}, nil
@@ -50,7 +50,7 @@ func (p *Producer) SendMessage(topic string, key string, value []byte) error {
 		return fmt.Errorf("failed to send message to Kafka: %w", err)
 	}
 
-	logger.Debug("Message sent to Kafka",
+	p.logger.Debug("Message sent to Kafka",
 		zap.String("topic", topic),
 		zap.String("key", key),
 		zap.Int32("partition", partition),
@@ -66,7 +66,7 @@ func (p *Producer) Close() error {
 		if err := p.producer.Close(); err != nil {
 			return fmt.Errorf("failed to close Kafka producer: %w", err)
 		}
-		logger.Info("Kafka producer closed")
+		p.logger.Info("Kafka producer closed")
 	}
 	return nil
 }
@@ -81,10 +81,11 @@ type Consumer struct {
 	wg       sync.WaitGroup
 	ctx      context.Context
 	cancel   context.CancelFunc
+	logger   *zap.Logger
 }
 
 // NewConsumer creates a new Kafka consumer.
-func NewConsumer(brokers []string, groupID string, topics []string, handler sarama.ConsumerGroupHandler) (*Consumer, error) {
+func NewConsumer(logger *zap.Logger, brokers []string, groupID string, topics []string, handler sarama.ConsumerGroupHandler) (*Consumer, error) {
 	config := sarama.NewConfig()
 	config.Consumer.Return.Errors = true
 	config.Consumer.Offsets.Initial = sarama.OffsetNewest
@@ -110,6 +111,7 @@ func NewConsumer(brokers []string, groupID string, topics []string, handler sara
 		handler:  handler,
 		ctx:      ctx,
 		cancel:   cancel,
+		logger:   logger,
 	}, nil
 }
 
@@ -120,7 +122,7 @@ func (c *Consumer) Start() {
 		defer c.wg.Done()
 		for {
 			if err := c.consumer.Consume(c.ctx, c.topics, c.handler); err != nil {
-				logger.Error("Error from consumer", zap.Error(err))
+				c.logger.Error("Error from consumer", zap.Error(err))
 			}
 
 			if c.ctx.Err() != nil {
@@ -129,7 +131,7 @@ func (c *Consumer) Start() {
 		}
 	}()
 
-	logger.Info("Kafka consumer started",
+	c.logger.Info("Kafka consumer started",
 		zap.String("group", c.group),
 		zap.Strings("topics", c.topics),
 	)
@@ -144,7 +146,7 @@ func (c *Consumer) Close() error {
 		if err := c.consumer.Close(); err != nil {
 			return fmt.Errorf("failed to close Kafka consumer: %w", err)
 		}
-		logger.Info("Kafka consumer closed")
+		c.logger.Info("Kafka consumer closed")
 	}
 	return nil
 }

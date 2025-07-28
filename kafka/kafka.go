@@ -10,6 +10,8 @@ import (
 	"go.uber.org/zap"
 )
 
+type ConfigOption func(*sarama.Config)
+
 // Producer represents Kafka producer.
 type Producer struct {
 	producer sarama.SyncProducer
@@ -18,11 +20,15 @@ type Producer struct {
 }
 
 // NewProducer creates a new Kafka producer.
-func NewProducer(logger *zap.Logger, brokers []string) (*Producer, error) {
+func NewProducer(logger *zap.Logger, brokers []string, opts ...ConfigOption) (*Producer, error) {
 	config := sarama.NewConfig()
 	config.Producer.RequiredAcks = sarama.WaitForAll
 	config.Producer.Retry.Max = 5
 	config.Producer.Return.Successes = true
+
+	for _, opt := range opts {
+		opt(config)
+	}
 
 	producer, err := sarama.NewSyncProducer(brokers, config)
 	if err != nil {
@@ -85,10 +91,21 @@ type Consumer struct {
 }
 
 // NewConsumer creates a new Kafka consumer.
-func NewConsumer(logger *zap.Logger, brokers []string, groupID string, topics []string, handler sarama.ConsumerGroupHandler) (*Consumer, error) {
+func NewConsumer(
+	logger *zap.Logger,
+	brokers []string,
+	groupID string,
+	topics []string,
+	handler sarama.ConsumerGroupHandler,
+	opts ...ConfigOption,
+) (*Consumer, error) {
 	config := sarama.NewConfig()
 	config.Consumer.Return.Errors = true
 	config.Consumer.Offsets.Initial = sarama.OffsetNewest
+
+	for _, opt := range opts {
+		opt(config)
+	}
 
 	consumer, err := sarama.NewConsumerGroup(brokers, groupID, config)
 	if err != nil {

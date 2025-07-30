@@ -7,24 +7,24 @@ import (
 	"time"
 )
 
-type SubDir string
+type DataType string
 
 const (
-	Input  SubDir = "input"
-	Output SubDir = "output"
+	Input  DataType = "input"
+	Output DataType = "output"
 )
 
 type FileStorage struct {
 	Root      string
-	SubDir    SubDir
+	Type      DataType
 	Threshold time.Duration
 	DirLayout string
 }
 
-func NewFileStorage(root string, dir SubDir, threshold int) *FileStorage {
+func NewFileStorage(root string, t DataType, threshold int) *FileStorage {
 	return &FileStorage{
-		Root:      filepath.Join(root, string(dir)),
-		SubDir:    dir,
+		Root:      filepath.Join(root, string(t)),
+		Type:      t,
 		Threshold: time.Duration(threshold) * time.Minute,
 		DirLayout: "20060102-1504",
 	}
@@ -36,54 +36,34 @@ func (s *FileStorage) getBucketName() string {
 	return rounded.Format(s.DirLayout)
 }
 
-func (s *FileStorage) DirPath(subDirs ...string) string {
-	var (
-		path []string
-	)
-	bucket := s.getBucketName()
-	path = append(path, bucket)
-	path = append(path, subDirs...)
-	return filepath.Join(path...)
-}
-
-func (s *FileStorage) RooDirPath(subDirs ...string) string {
-	return filepath.Join(s.Root, s.DirPath(subDirs...))
-}
-
-func (s *FileStorage) FilePath(filename string, subDirs ...string) string {
-	return filepath.Join(s.DirPath(subDirs...), filename)
-}
-
-func (s *FileStorage) RootFilePath(filename string, subDirs ...string) string {
-	return filepath.Join(s.Root, s.FilePath(filename, subDirs...))
-}
-
 func (s *FileStorage) CreateDir(path string) error {
 	return os.MkdirAll(path, 0755)
 }
 
-func (s *FileStorage) Save(reader io.Reader, filename string, subDirs ...string) (string, error) {
-	dirPath := s.DirPath(subDirs...)
-	rootDirPath := filepath.Join(s.Root, dirPath)
-
-	if err := s.CreateDir(rootDirPath); err != nil {
-		return "", err
+func (s *FileStorage) WriteFile(reader io.Reader, filename string, subDirs ...string) (*Path, error) {
+	path := s.GetPath(filename, subDirs...)
+	if err := s.CreateDir(path.FullDirPath()); err != nil {
+		return nil, err
 	}
 
-	outFile, err := os.Create(filepath.Join(rootDirPath, filename))
+	outFile, err := os.Create(path.FullFilePath())
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	defer outFile.Close()
 
 	if _, err = io.Copy(outFile, reader); err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return filepath.Join(dirPath, filename), nil
+	return path, nil
 }
 
-func (s *FileStorage) Dirs() ([]string, error) {
+func (s *FileStorage) GetPath(filename string, subDirs ...string) *Path {
+	return NewPath(s.Root, s.getBucketName(), filepath.Join(subDirs...), filename)
+}
+
+func (s *FileStorage) GetBuckets() ([]string, error) {
 	var (
 		dirs []string
 	)
@@ -101,10 +81,6 @@ func (s *FileStorage) Dirs() ([]string, error) {
 	return dirs, nil
 }
 
-func (s *FileStorage) RemoveDir(dir string) error {
-	return os.RemoveAll(filepath.Join(s.Root, dir))
-}
-
-func (s *FileStorage) RemoveFile(filepath string) error {
-	return os.Remove(filepath)
+func (s *FileStorage) RemoveBucket(bucketName string) error {
+	return os.RemoveAll(filepath.Join(s.Root, bucketName))
 }

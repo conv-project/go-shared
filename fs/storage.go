@@ -41,7 +41,7 @@ func (s *FileStorage) CreateDir(path string) error {
 }
 
 func (s *FileStorage) WriteFile(reader io.Reader, filename string, subDirs ...string) (*Path, error) {
-	path := s.GetPath(filename, subDirs...)
+	path := s.MakePath(filename, subDirs...)
 	if err := s.CreateDir(path.FullDirPath()); err != nil {
 		return nil, err
 	}
@@ -59,7 +59,7 @@ func (s *FileStorage) WriteFile(reader io.Reader, filename string, subDirs ...st
 	return path, nil
 }
 
-func (s *FileStorage) GetPath(filename string, subDirs ...string) *Path {
+func (s *FileStorage) MakePath(filename string, subDirs ...string) *Path {
 	return NewPath(s.Root, s.getBucketName(), filepath.Join(subDirs...), filename)
 }
 

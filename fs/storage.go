@@ -36,20 +36,41 @@ func (s *FileStorage) getBucketName() string {
 	return rounded.Format(s.DirLayout)
 }
 
-func (s *FileStorage) Save(reader io.Reader, filename string, subDirs ...string) (string, error) {
+func (s *FileStorage) DirPath(subDirs ...string) string {
 	var (
-		dirPath []string
+		path []string
 	)
 	bucket := s.getBucketName()
-	dirPath = append(dirPath, s.Root, bucket)
-	dirPath = append(dirPath, subDirs...)
-	path := filepath.Join(dirPath...)
+	path = append(path, bucket)
+	path = append(path, subDirs...)
+	return filepath.Join(path...)
+}
 
-	if err := os.MkdirAll(path, 0755); err != nil {
+func (s *FileStorage) RooDirPath(subDirs ...string) string {
+	return filepath.Join(s.Root, s.DirPath(subDirs...))
+}
+
+func (s *FileStorage) FilePath(filename string, subDirs ...string) string {
+	return filepath.Join(s.DirPath(subDirs...), filename)
+}
+
+func (s *FileStorage) RootFilePath(filename string, subDirs ...string) string {
+	return filepath.Join(s.Root, s.FilePath(filename, subDirs...))
+}
+
+func (s *FileStorage) CreateDir(path string) error {
+	return os.MkdirAll(path, 0755)
+}
+
+func (s *FileStorage) Save(reader io.Reader, filename string, subDirs ...string) (string, error) {
+	dirPath := s.DirPath(subDirs...)
+	rootDirPath := filepath.Join(s.Root, dirPath)
+
+	if err := s.CreateDir(rootDirPath); err != nil {
 		return "", err
 	}
 
-	outFile, err := os.Create(filepath.Join(path, filename))
+	outFile, err := os.Create(filepath.Join(rootDirPath, filename))
 	if err != nil {
 		return "", err
 	}
@@ -59,8 +80,7 @@ func (s *FileStorage) Save(reader io.Reader, filename string, subDirs ...string)
 		return "", err
 	}
 
-	visiblePath := filepath.Join(dirPath[1:]...)
-	return filepath.Join(visiblePath, filename), nil
+	return filepath.Join(dirPath, filename), nil
 }
 
 func (s *FileStorage) Dirs() ([]string, error) {

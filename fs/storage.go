@@ -63,6 +63,11 @@ func (s *FileStorage) MakePath(filename string, subDirs ...string) *Path {
 	return NewPath(s.Root, s.getBucketName(), filepath.Join(subDirs...), filename)
 }
 
+func (s *FileStorage) IsExists(path *Path) bool {
+	_, err := os.Stat(path.FullFilePath())
+	return err == nil
+}
+
 func (s *FileStorage) GetBuckets() ([]string, error) {
 	var (
 		dirs []string

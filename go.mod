@@ -6,6 +6,7 @@ toolchain go1.24.5
 
 require (
 	github.com/IBM/sarama v1.45.2
+	github.com/google/uuid v1.6.0
 	go.mongodb.org/mongo-driver v1.17.4
 	go.uber.org/zap v1.27.0
 	google.golang.org/grpc v1.74.2

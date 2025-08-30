@@ -56,7 +56,7 @@ func (p *Producer) SendMessage(topic string, key string, value []byte) error {
 		return fmt.Errorf("failed to send message to Kafka: %w", err)
 	}
 
-	p.logger.Debug("Message sent to Kafka",
+	p.logger.Debug("message sent to Kafka",
 		zap.String("topic", topic),
 		zap.String("key", key),
 		zap.Int32("partition", partition),
@@ -72,7 +72,7 @@ func (p *Producer) Close() error {
 		if err := p.producer.Close(); err != nil {
 			return fmt.Errorf("failed to close Kafka producer: %w", err)
 		}
-		p.logger.Info("Kafka producer closed")
+		p.logger.Info("kafka producer closed")
 	}
 	return nil
 }
@@ -112,7 +112,7 @@ func NewConsumer(
 		return nil, fmt.Errorf("failed to create Kafka consumer: %w", err)
 	}
 
-	logger.Info("Connected to Kafka consumer",
+	logger.Info("connected to Kafka consumer",
 		zap.Strings("brokers", brokers),
 		zap.String("group", groupID),
 		zap.Strings("topics", topics),
@@ -139,7 +139,7 @@ func (c *Consumer) Start() {
 		defer c.wg.Done()
 		for {
 			if err := c.consumer.Consume(c.ctx, c.topics, c.handler); err != nil {
-				c.logger.Error("Error from consumer", zap.Error(err))
+				c.logger.Error("error from consumer", zap.Error(err))
 			}
 
 			if c.ctx.Err() != nil {
@@ -148,7 +148,7 @@ func (c *Consumer) Start() {
 		}
 	}()
 
-	c.logger.Info("Kafka consumer started",
+	c.logger.Info("kafka consumer started",
 		zap.String("group", c.group),
 		zap.Strings("topics", c.topics),
 	)
@@ -163,7 +163,7 @@ func (c *Consumer) Close() error {
 		if err := c.consumer.Close(); err != nil {
 			return fmt.Errorf("failed to close Kafka consumer: %w", err)
 		}
-		c.logger.Info("Kafka consumer closed")
+		c.logger.Info("kafka consumer closed")
 	}
 	return nil
 }

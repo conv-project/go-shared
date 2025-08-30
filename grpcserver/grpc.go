@@ -42,7 +42,7 @@ func (s *Server) Start() error {
 		return fmt.Errorf("failed to listen on %s: %w", addr, err)
 	}
 
-	s.logger.Info("Starting gRPC server", zap.String("port", s.port))
+	s.logger.Info("starting gRPC server", zap.String("port", s.port))
 
 	if err := s.server.Serve(lis); err != nil {
 		return fmt.Errorf("failed to serve gRPC: %w", err)

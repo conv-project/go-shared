@@ -37,7 +37,7 @@ func New(logger *zap.Logger, dsn string, dbName string) (*Database, error) {
 		return nil, fmt.Errorf("failed to ping MongoDB: %w", err)
 	}
 
-	logger.Info("Connected to MongoDB", zap.String("dsn", dsn), zap.String("database", dbName))
+	logger.Info("connected to MongoDB", zap.String("dsn", dsn), zap.String("database", dbName))
 
 	return &Database{
 		logger:   logger,
@@ -52,7 +52,7 @@ func (db *Database) Close(ctx context.Context) error {
 		if err := db.client.Disconnect(ctx); err != nil {
 			return fmt.Errorf("failed to disconnect from MongoDB: %w", err)
 		}
-		db.logger.Info("Disconnected from MongoDB")
+		db.logger.Info("disconnected from MongoDB")
 	}
 	return nil
 }

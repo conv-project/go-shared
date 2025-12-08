@@ -3,9 +3,9 @@ package grpcserver
 import (
 	"fmt"
 	"google.golang.org/grpc/reflection"
+	"log/slog"
 	"net"
 
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/health"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
@@ -16,11 +16,10 @@ type Server struct {
 	server *grpc.Server
 	health *health.Server
 	port   string
-	logger *zap.Logger
 }
 
 // New creates a new gRPC server.
-func New(logger *zap.Logger, port string, opts ...grpc.ServerOption) *Server {
+func New(port string, opts ...grpc.ServerOption) *Server {
 	server := grpc.NewServer(opts...)
 	healthServer := health.NewServer()
 	healthpb.RegisterHealthServer(server, healthServer)
@@ -29,7 +28,6 @@ func New(logger *zap.Logger, port string, opts ...grpc.ServerOption) *Server {
 		server: server,
 		health: healthServer,
 		port:   port,
-		logger: logger,
 	}
 }
 
@@ -52,7 +50,7 @@ func (s *Server) Start() error {
 		return fmt.Errorf("failed to listen on %s: %w", addr, err)
 	}
 
-	s.logger.Info("starting gRPC server", zap.String("port", s.port))
+	slog.Info("starting gRPC server", slog.String("port", s.port))
 
 	if err := s.server.Serve(lis); err != nil {
 		return fmt.Errorf("failed to serve gRPC: %w", err)
@@ -65,6 +63,6 @@ func (s *Server) Start() error {
 func (s *Server) Stop() {
 	if s.server != nil {
 		s.server.GracefulStop()
-		s.logger.Info("gRPC server stopped")
+		slog.Info("gRPC server stopped")
 	}
 }

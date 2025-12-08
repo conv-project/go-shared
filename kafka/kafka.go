@@ -3,11 +3,10 @@ package kafka
 import (
 	"context"
 	"fmt"
-	"log"
+	"log/slog"
 	"sync"
 
 	"github.com/IBM/sarama"
-	"go.uber.org/zap"
 )
 
 type ConfigOption func(*sarama.Config)
@@ -16,11 +15,10 @@ type ConfigOption func(*sarama.Config)
 type Producer struct {
 	producer sarama.SyncProducer
 	brokers  []string
-	logger   *zap.Logger
 }
 
 // NewProducer creates a new Kafka producer.
-func NewProducer(logger *zap.Logger, brokers []string, opts ...ConfigOption) (*Producer, error) {
+func NewProducer(brokers []string, opts ...ConfigOption) (*Producer, error) {
 	config := sarama.NewConfig()
 	config.Producer.RequiredAcks = sarama.WaitForAll
 	config.Producer.Retry.Max = 5
@@ -35,9 +33,8 @@ func NewProducer(logger *zap.Logger, brokers []string, opts ...ConfigOption) (*P
 		return nil, fmt.Errorf("failed to create Kafka producer: %w", err)
 	}
 
-	log.Printf("Connected to Kafka producer: %v", brokers)
+	slog.Info("connected to Kafka producer", slog.Any("brokers", brokers))
 	return &Producer{
-		logger:   logger,
 		producer: producer,
 		brokers:  brokers,
 	}, nil
@@ -56,11 +53,11 @@ func (p *Producer) SendMessage(topic string, key string, value []byte) error {
 		return fmt.Errorf("failed to send message to Kafka: %w", err)
 	}
 
-	p.logger.Debug("message sent to Kafka",
-		zap.String("topic", topic),
-		zap.String("key", key),
-		zap.Int32("partition", partition),
-		zap.Int64("offset", offset),
+	slog.Debug("message sent to Kafka",
+		slog.String("topic", topic),
+		slog.String("key", key),
+		slog.Int("partition", int(partition)),
+		slog.Int64("offset", offset),
 	)
 
 	return nil
@@ -72,7 +69,7 @@ func (p *Producer) Close() error {
 		if err := p.producer.Close(); err != nil {
 			return fmt.Errorf("failed to close Kafka producer: %w", err)
 		}
-		p.logger.Info("kafka producer closed")
+		slog.Info("kafka producer closed")
 	}
 	return nil
 }
@@ -87,12 +84,10 @@ type Consumer struct {
 	wg       sync.WaitGroup
 	ctx      context.Context
 	cancel   context.CancelFunc
-	logger   *zap.Logger
 }
 
 // NewConsumer creates a new Kafka consumer.
 func NewConsumer(
-	logger *zap.Logger,
 	brokers []string,
 	groupID string,
 	topics []string,
@@ -112,10 +107,10 @@ func NewConsumer(
 		return nil, fmt.Errorf("failed to create Kafka consumer: %w", err)
 	}
 
-	logger.Info("connected to Kafka consumer",
-		zap.Strings("brokers", brokers),
-		zap.String("group", groupID),
-		zap.Strings("topics", topics),
+	slog.Info("connected to Kafka consumer",
+		slog.Any("brokers", brokers),
+		slog.String("group", groupID),
+		slog.Any("topics", topics),
 	)
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -128,7 +123,6 @@ func NewConsumer(
 		handler:  handler,
 		ctx:      ctx,
 		cancel:   cancel,
-		logger:   logger,
 	}, nil
 }
 
@@ -139,7 +133,7 @@ func (c *Consumer) Start() {
 		defer c.wg.Done()
 		for {
 			if err := c.consumer.Consume(c.ctx, c.topics, c.handler); err != nil {
-				c.logger.Error("error from consumer", zap.Error(err))
+				slog.Error(fmt.Sprintf("error from consumer: %v", err))
 			}
 
 			if c.ctx.Err() != nil {
@@ -148,9 +142,9 @@ func (c *Consumer) Start() {
 		}
 	}()
 
-	c.logger.Info("kafka consumer started",
-		zap.String("group", c.group),
-		zap.Strings("topics", c.topics),
+	slog.Info("kafka consumer started",
+		slog.String("group", c.group),
+		slog.Any("topics", c.topics),
 	)
 }
 
@@ -163,7 +157,7 @@ func (c *Consumer) Close() error {
 		if err := c.consumer.Close(); err != nil {
 			return fmt.Errorf("failed to close Kafka consumer: %w", err)
 		}
-		c.logger.Info("kafka consumer closed")
+		slog.Info("kafka consumer closed")
 	}
 	return nil
 }

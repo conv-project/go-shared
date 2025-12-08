@@ -4,14 +4,13 @@ import (
 	"context"
 	"fmt"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	"go.uber.org/zap"
 	"google.golang.org/grpc"
+	"log/slog"
 	"net/http"
 	"time"
 )
 
 type HTTPGateway struct {
-	logger   *zap.Logger
 	server   *http.Server
 	grpcPort string
 	httpPort string
@@ -19,9 +18,8 @@ type HTTPGateway struct {
 	opts     []grpc.DialOption
 }
 
-func NewHTTPGateway(logger *zap.Logger, grpcPort, httpPort string, opts ...grpc.DialOption) *HTTPGateway {
+func NewHTTPGateway(grpcPort, httpPort string, opts ...grpc.DialOption) *HTTPGateway {
 	return &HTTPGateway{
-		logger:   logger,
 		mux:      runtime.NewServeMux(),
 		opts:     opts,
 		grpcPort: grpcPort,
@@ -38,7 +36,7 @@ func (g *HTTPGateway) Start() error {
 		Addr:    fmt.Sprintf(":%s", g.httpPort),
 		Handler: g.mux,
 	}
-	g.logger.Info("starting HTTP server", zap.String("port", g.httpPort))
+	slog.Info("starting HTTP server", slog.String("port", g.httpPort))
 
 	return g.server.ListenAndServe()
 }

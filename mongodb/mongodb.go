@@ -3,22 +3,21 @@ package mongodb
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
-	"go.uber.org/zap"
 )
 
 // Database represents MongoDB database connection.
 type Database struct {
 	client   *mongo.Client
 	database *mongo.Database
-	logger   *zap.Logger
 }
 
 // New creates a new MongoDB connection.
-func New(logger *zap.Logger, dsn string, dbName string) (*Database, error) {
+func New(dsn string, dbName string) (*Database, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
@@ -37,10 +36,9 @@ func New(logger *zap.Logger, dsn string, dbName string) (*Database, error) {
 		return nil, fmt.Errorf("failed to ping MongoDB: %w", err)
 	}
 
-	logger.Info("connected to MongoDB", zap.String("dsn", dsn), zap.String("database", dbName))
+	slog.Info("connected to MongoDB", slog.String("dsn", dsn), slog.String("database", dbName))
 
 	return &Database{
-		logger:   logger,
 		client:   client,
 		database: client.Database(dbName),
 	}, nil
@@ -52,7 +50,7 @@ func (db *Database) Close(ctx context.Context) error {
 		if err := db.client.Disconnect(ctx); err != nil {
 			return fmt.Errorf("failed to disconnect from MongoDB: %w", err)
 		}
-		db.logger.Info("disconnected from MongoDB")
+		slog.Info("disconnected from MongoDB")
 	}
 	return nil
 }

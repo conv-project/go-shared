@@ -14,7 +14,7 @@ func parseLevel(s string) slog.Level {
 	return lvl
 }
 
-func InitLogger(level string) {
+func InitLogger(level string, withAttrs ...any) {
 	handler := slog.Handler(
 		slog.NewJSONHandler(
 			os.Stdout,
@@ -22,5 +22,5 @@ func InitLogger(level string) {
 		),
 	)
 	handler = NewHandlerMiddleware(handler)
-	slog.SetDefault(slog.New(handler))
+	slog.SetDefault(slog.New(handler).With(withAttrs...))
 }

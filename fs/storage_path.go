@@ -27,9 +27,9 @@ func (p *Path) FilePath() string {
 }
 
 func (p *Path) FullDirPath() string {
-	return filepath.Join(p.root, p.bucket, p.dir)
+	return filepath.Join(p.root, p.bucket, p.dir, p.filename)
 }
 
 func (p *Path) DirPath() string {
-	return filepath.Join(p.bucket, p.dir)
+	return filepath.Join(p.bucket, p.dir, p.filename)
 }

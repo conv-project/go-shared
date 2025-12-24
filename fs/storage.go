@@ -1,6 +1,7 @@
 package fs
 
 import (
+	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -43,17 +44,17 @@ func (s *FileStorage) CreateDir(path string) error {
 func (s *FileStorage) WriteFile(reader io.Reader, filename string, subDirs ...string) (*Path, error) {
 	path := s.MakePath(filename, subDirs...)
 	if err := s.CreateDir(path.FullDirPath()); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("create dir error: %w", err)
 	}
 
 	outFile, err := os.Create(path.FullFilePath())
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("create file error: %w", err)
 	}
 	defer outFile.Close()
 
 	if _, err = io.Copy(outFile, reader); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("io copy error: %w", err)
 	}
 
 	return path, nil
